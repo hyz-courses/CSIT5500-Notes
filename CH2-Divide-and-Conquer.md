@@ -149,9 +149,9 @@ If any of the point of the inspected cross-set pair is out of this region, the $
 
 For this point specifically. Any point out of this region is useless, since its $y$ distance will already be larger than $\delta$. The pairing point should always lie in the gray area.
 
-**`fact`** `sub-figure (c)` The gray area can have atmost 6 points. There are $O(1)$ points inside the gray rectangle.
+**`fact`** *(c)* The gray area can have atmost 6 points. There are $O(1)$ points inside the gray rectangle.
 
-**`informal-proof`** `sub-figure (b)` If we have a point in an arbitrary region in the gray area, there will be no points within a dashed-circle of radius $\delta$ from it. Otherwise, the distance between the second point to the circle's center will be smaller than $\delta$, leading to a contradiction.
+**`informal-proof`** *(b)* If we have a point in an arbitrary region in the gray area, there will be no points within a dashed-circle of radius $\delta$ from it. Otherwise, the distance between the second point to the circle's center will be smaller than $\delta$, leading to a contradiction.
 
 ### 2.2.3 Two Scans
 
@@ -239,3 +239,196 @@ T(n) + O(n \log n) &= 2 \cdot O(n \log n) \\
 ```
 
 # 3. k-th Smallest Number
+
+## 3.1 Problem Description
+
+**`given`**
+
+1. $n$ sorted numbers:
+
+```math
+x_{1}, x_{2}, \cdots, x_{n}
+```
+
+2. An inter $k$, where:
+
+```math
+k \in [1, n]
+```
+
+**`goal`** Output the $k$-th smallest number.
+
+## 3.2 Problem Solution
+
+**`example`**
+
+- $A = [5, 10, 1, 6, 13, 11, 9, 4, 8, 7, 3, 12, 2], \ n=13$
+- $k = 5$
+
+---
+
+**`algorithm`** SelectKth
+
+**Step 1.** Find a random pivot $p$ in $A$, in $O(1)$ time.
+
+- For instance, pick $p=6$.
+
+**Step 2.** Partition $A$ into left and right parts, where all the left parts $< 6$ and all the right parts $\geq 6$, in $O(n)$ time.
+
+```math
+\underbrace{2, 3, 1, 5, 4}_{\leq\text{6, size} = 5}, \underbrace{11, 9, 13, 8, 7, 10, 12, 6}_{\geq\text{6, size = } 8}
+```
+
+**Step 3.** Recursively find the element.
+
+- If $k \leq 5$, we recursively find the $k$-th smallest number in the left subarray.
+- If $k > 5$, we recursively find the $(k - 5)$-th smallest number in the right subarray.
+
+---
+
+**`pseudocode`** SelectKth $(A, p, r, k)$
+
+1. If $p$ = $r$, return $A[p]$.
+2. $j$ := Partition($A$, $p$, $r$);
+3. If $k \leq (j - p + 1)$ then SelectKth $(A, p, j, k)$;
+4. Otherwise, SelectKth $\Bigl(A, j+1, r, k-(j-p+1)\Bigr)$
+
+## 3.3 Complexity
+
+**`analysis`** The worst-case would be that, at each recursive call, the called pivot is always the smallest.
+
+```math
+\begin{align}
+
+\underbrace{3, }_{\leq 3}\underbrace{6, 13, 11, 9, 4, 8, 7, 5, 12, 10}_{> 3} & \ (p=3) \\
+
+\underbrace{4, }_{\leq 4}\underbrace{13, 11, 9, 6, 8, 7, 5, 12, 10}_{> 4} & \ (p=4) \\
+
+\underbrace{5, }_{\leq 5}\underbrace{11, 9, 6, 8, 7, 13, 12, 10}_{> 5} & \ (p=5) \\
+
+\cdots &
+
+\end{align}
+```
+
+In this case, each recursive call only eliminates 1 elment, resulting the recurrence of:
+
+```math
+T(n) \leq T(n-1) + O(n)
+```
+
+Which results in: $T(n) = O(n^2)$.
+
+## 3.4 Enhance Pivot Selection
+
+### 3.4.1 Foundational Theory
+
+The idea is to enforce a more balanced partition. If we can force each split to have an $\alpha : 1-\alpha$ ratio for some $\alpha \in [\frac{1}{2}, 1)$. In this case, the recurrence would be:
+
+```math
+T(n) \leq T(\alpha n) + O(n)
+```
+
+Expanding it by:
+
+```math
+\begin{align}
+T(n) &\leq T(\alpha n) + O(n) \\
+
+&\leq \Bigl(T(\alpha^{2} n) + O(\alpha n)\Bigl) + O(n) \\
+
+&= T(\alpha^{2} n) + O(\alpha n) + O(n) \\
+
+&\leq T(\alpha^{3} n) + O(\alpha^{2} n) + O(\alpha n) + O(n) \\
+
+&\leq \cdots \\
+
+&\leq T(\alpha^{\infty} n) + O(n \cdot \sum_{i=1}^{\infty}\alpha^{i}) \\
+
+&= T(1) + O(\frac{n}{1-\alpha}) \\
+
+&\leq O(n)
+
+\end{align}
+```
+
+*Remark* The geometric series:
+
+```math
+\sum_{i=1}^{\infty} \alpha^{i} = \frac{1}{1-\alpha}, \ \alpha \in (0,1)
+```
+
+### 3.4.2 Implementation: Median of Medians
+
+---
+
+**`pseudocode`** SelectKth $(A, p, r, k)$
+
+1. If $p=r$, return $A[p]$.
+2. $m$ := MedianOfMedians $(A, r)$;  `// only change`
+3. If $k \leq (m-p+1)$ then SelectKth $(A, p, m, k)$;
+4. Otherwise, SelectKth $\Bigl(A, m+1, r, k-(m-p+1)\Bigr)$;
+
+---
+
+**`algorithm`** MedianOfMedians
+
+**Step 1.** First, partition the array $A$ into sub-arrays of size $5$.
+
+**Step 2.** For each sub-array: 
+
+- Find the median in $O(1)$ time.
+- Put the median into a set $B$.
+
+**Step 3.** Select the $\frac{|A|}{10}$ - th smallest from $B$ as $M$, in $T(\frac{n}{5})$ time.
+
+**Step 4.** Output $M$. 
+
+---
+
+**`analysis`**
+
+*(c)* At least $\frac{n}{4}$ numbers are $\geq m$, at least $\frac{n}{4}$ numbers are $\leq m$. Therefore, the maximum possible size of the left and right array is $\frac{3n}{4}$.
+
+<img src="asset/ch-2/kth-smallest.png" style="display: block; width: 400px; margin: 0 auto;"/>
+
+<br>
+
+---
+
+## 3.5 Complexity after Enhancement
+
+At each recursive call:
+
+- MediansOfMedians runs in $T(\frac{n}{5})+O(n)$ time.
+- Recursive call runs in $T(\frac{3n}{4}) + O(n)$ time.
+
+Therefore, the recurrence is:
+
+```math
+T(n) \leq \underbrace{T(\frac{n}{5})}_{\text{MoM}} + \underbrace{T(\frac{3n}{4}) + O(n)}_{\text{Recursive Calls}}
+```
+
+An informal evaluation:
+
+```math
+\begin{align}
+
+T(n) &\leq T(\frac{n}{5}) + T(\frac{3n}{4}) + O(n) \\
+
+&= T(\frac{n}{5} + \frac{3n}{4}) + O(n) \\
+
+&= T(\frac{19}{20}n) + O(n) \\
+
+&\leq T \Bigl((\frac{19}{20})^{2} n\Bigr) + O(\frac{19}{20} n) + O(n) \\
+
+&\leq \cdots \\
+
+&\leq T(1) + O(\frac{n}{1-\frac{19}{20}}) \\
+
+&\leq O(n)
+
+\end{align}
+```
+
+After enhancements, the complexity of finding the k-th smallest element is $O(n)$, which is the same as finding the smallest element.
