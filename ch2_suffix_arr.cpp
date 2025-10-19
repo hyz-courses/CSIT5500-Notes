@@ -106,14 +106,10 @@ vector<pair<int, int>> sort_pairs(
 }
 
 int main(){
-    // string sample = "aabccaba";
-
-    // long long string_size = sample.size();
-
     string sample;
     cin >> sample;
 
-
+    // Add sufficient Padding to string
     int num_stages = 1;
     int length = sample.size();
     int _length = length;
@@ -126,7 +122,8 @@ int main(){
     length = sample.size();
 
     vector<pair<int, int>> pair_list;
-    map<string, int> substring_map;
+    map<string, int> substring_to_stagerank;
+    map<string, pair<int, int>> substring_to_stagetuple;
 
     // Convert char to int to sort
     map<int, int> set;
@@ -143,7 +140,8 @@ int main(){
         pair<int, int> this_pair = pair_list[i];
         char c = this_pair.first;
         string s = string(1, c);
-        substring_map[s] = i + 1;
+        substring_to_stagerank[s] = i + 1;
+        substring_to_stagetuple[s] = this_pair;
     }
 
 
@@ -153,9 +151,9 @@ int main(){
 
         for(int j=0; j<length - (1 << i); j++){
             string substring = sample.substr(j, (1 << i));
-            int first_half = substring_map[
+            int first_half = substring_to_stagerank[
                 substring.substr(0, substring.size() >> 1)];
-            int second_half = substring_map[substring.substr(
+            int second_half = substring_to_stagerank[substring.substr(
                 substring.size() >> 1, 
                 substring.size() >> 1)];
             if (
@@ -164,6 +162,7 @@ int main(){
 
             stage_pair_list.push_back((pair<int, int>){first_half, second_half});
             substring_pair_map.insert({(pair<int, int>){first_half, second_half}, substring});
+            substring_to_stagetuple[substring] = (pair<int, int>){first_half, second_half};
         }
 
         vector<pair<int, int>> sorted_pair_list = sort_pairs(stage_pair_list, length - num_stages);
@@ -172,7 +171,7 @@ int main(){
         for(int j=0; j<sorted_pair_list.size(); j++){
             cout << j + 1 << " "<< substring_pair_map[sorted_pair_list[j]] << " => " << sorted_pair_list[j].first << " " << sorted_pair_list[j].second << endl;
             sorted_substrings.push_back(substring_pair_map[sorted_pair_list[j]]);
-            substring_map.insert({
+            substring_to_stagerank.insert({
                 substring_pair_map[sorted_pair_list[j]], j + 1});
         }
         cout << "\n";
